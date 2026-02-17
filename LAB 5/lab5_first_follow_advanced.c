@@ -106,3 +106,11 @@ int main() {
 
     return 0;
 }
+// 5
+// E=TR
+// R=+TR
+// T=FY
+// Y=*FY
+// F=i
+
+
