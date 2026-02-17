@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
-int state = 0;
+int state = 1;   // start from q1, q0 reserved
 
 struct NFA {
     int start;
@@ -12,14 +11,14 @@ struct NFA {
 struct NFA stack[100];
 int top = -1;
 
-/* Stack ops */
+/* Stack operations */
 void push(struct NFA n) {
     stack[++top] = n;
 }
 
 struct NFA pop() {
     if (top < 0) {
-        printf("\n❌ Invalid postfix expression\n");
+        printf("❌ Invalid postfix expression\n");
         exit(1);
     }
     return stack[top--];
@@ -40,9 +39,9 @@ int is_valid_postfix(char *p) {
         if (p[i] >= 'a' && p[i] <= 'z')
             count++;
         else if (p[i] == '*')
-            ;   // unary
-        else if (p[i] == '.')
-            count--;   // binary
+            ;
+        else if (p[i] == '.' || p[i] == '/')
+            count--;
         else
             return 0;
 
@@ -59,16 +58,16 @@ int main() {
     scanf("%s", postfix);
 
     if (!is_valid_postfix(postfix)) {
-        printf("\n❌ Invalid postfix expression\n");
+        printf("❌ Invalid postfix expression\n");
         return 0;
     }
 
     printf("\nNFA Transitions:\n");
 
+    /* Build NFA using Thompson's construction */
     for (int i = 0; postfix[i]; i++) {
         char ch = postfix[i];
 
-        /* Operand */
         if (ch >= 'a' && ch <= 'z') {
             struct NFA n;
             n.start = state++;
@@ -77,7 +76,6 @@ int main() {
             push(n);
         }
 
-        /* Kleene star */
         else if (ch == '*') {
             struct NFA n1 = pop();
             struct NFA n;
@@ -93,10 +91,10 @@ int main() {
             push(n);
         }
 
-        /* Concatenation */
         else if (ch == '.') {
             struct NFA n2 = pop();
             struct NFA n1 = pop();
+
             add_transition(n1.end, 'e', n2.start);
 
             struct NFA n;
@@ -105,16 +103,35 @@ int main() {
 
             push(n);
         }
+
+        else if (ch == '/') {
+            struct NFA n2 = pop();
+            struct NFA n1 = pop();
+            struct NFA n;
+
+            n.start = state++;
+            n.end = state++;
+
+            add_transition(n.start, 'e', n1.start);
+            add_transition(n.start, 'e', n2.start);
+            add_transition(n1.end, 'e', n.end);
+            add_transition(n2.end, 'e', n.end);
+
+            push(n);
+        }
     }
 
     struct NFA result = pop();
 
     if (top != -1) {
-        printf("\n❌ Invalid postfix expression\n");
+        printf("❌ Invalid postfix expression\n");
         return 0;
     }
 
-    printf("\nStart State: q%d\n", result.start);
+    /* 🔥 GLOBAL START STATE q0 */
+    add_transition(0, 'e', result.start);
+
+    printf("\nStart State: q0\n");
     printf("Final State: q%d\n", result.end);
 
     return 0;
